@@ -16,6 +16,8 @@ async function init() {
     for (const statement of sql.split(";").filter(part => part.trim())) {
       await connection.query(statement)
     }
+    // Las instalaciones anteriores usaban VARCHAR(128), que truncaba el hash scrypt.
+    await connection.query("ALTER TABLE usuarios_comercio MODIFY clave_hash VARCHAR(200) NOT NULL")
     console.log(`Base ${name} preparada. No se borraron datos ni se agregaron registros de ejemplo.`)
   } finally {
     await connection.end()

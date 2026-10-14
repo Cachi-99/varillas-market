@@ -17,17 +17,7 @@ app.get("/", (req, res) => {
   res.send("Servidor Varillas Market funcionando")
 })
 
-// RUTA GET PARA OBTENER PRODUCTOS
-app.get("/api/productos", (req, res) => {
-  const query = "SELECT * FROM productos"
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Error al obtener productos:", err)
-      return res.status(500).json({ error: "Error en la base de datos" })
-    }
-    res.json(results)
-  })
-})
+app.use('/api', require('./market').marketRoutes(db))
 
 // RUTA GET PARA OBTENER COMERCIOS
 app.get("/api/comercios", (req, res) => {
@@ -49,33 +39,19 @@ app.get('/api/categorias', (req, res) => {
   })
 })
 
-app.post('/api/productos', (req, res) => {
-  const { titulo, precio, url_imagen = '', comercio_id, categoria_id } = req.body
-
-  if (typeof titulo !== 'string' || !titulo.trim() || !Number.isFinite(precio) || precio < 0 || !Number.isInteger(comercio_id) || comercio_id <= 0 || !Number.isInteger(categoria_id) || categoria_id <= 0 || typeof url_imagen !== 'string') {
-    return res.status(400).json({ error: 'Título, precio válido, comercio y categoría son obligatorios.' })
-  }
-
-  const sql = 'INSERT INTO productos (titulo, precio, url_imagen, comercio_id, categoria_id) VALUES (?, ?, ?, ?, ?)'
-  db.query(sql, [titulo.trim(), precio, url_imagen, comercio_id, categoria_id], (err, result) => {
-    if (err) {
-      if (err.code === 'ER_NO_REFERENCED_ROW_2') return res.status(400).json({ error: 'El comercio o la categoría no existen.' })
-      console.error('Error al insertar producto:', err)
-      return res.status(500).json({ error: 'Error al insertar en la base de datos' })
-    }
-    res.json({ mensaje: 'Producto creado con éxito', id: result.insertId })
-  })
-})
-
 // Rutas para la Inteligencia Artificial (Vara IA)
-app.use("/api", aiRoutes)
+app.use("/api", aiRoutes(db))
 
 async function start() {
   try {
     // Verificar también las tablas antes de anunciar un arranque exitoso.
     await db.promise().query("SELECT id, nombre FROM comercios LIMIT 0")
+    await db.promise().query("SELECT id, comercio_id, usuario, clave_hash FROM usuarios_comercio LIMIT 0")
     await db.promise().query("SELECT id, nombre FROM categorias LIMIT 0")
     await db.promise().query("SELECT id, titulo, precio, url_imagen, comercio_id, categoria_id FROM productos LIMIT 0")
+    await db.promise().query("SELECT producto_id, descripcion FROM producto_detalles LIMIT 0")
+    await db.promise().query("SELECT id, clave, total FROM pedidos LIMIT 0")
+    await db.promise().query("SELECT pedido_id FROM pedido_items LIMIT 0")
   } catch (error) {
     console.error(`No se pudo iniciar el backend: MySQL ${config.database.host}:${config.database.port}/${config.database.database} (${error.code || "ERROR"}).`)
     console.error("Verificá que MySQL esté encendido y revisá DB_HOST, DB_PORT, DB_USER y DB_PASSWORD en backend/.env.")
