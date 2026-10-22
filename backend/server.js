@@ -1,4 +1,5 @@
 const config = require("./config")
+const path = require("node:path")
 const express = require("express")
 const cors = require("cors")
 const mysql = require("mysql2")
@@ -11,11 +12,6 @@ app.use(express.json())
 
 // El pool reemplaza conexiones cerradas cuando MySQL vuelve a estar disponible.
 const db = mysql.createPool({ ...config.database, connectionLimit: 5 })
-
-// Ruta raíz de prueba
-app.get("/", (req, res) => {
-  res.send("Servidor Varillas Market funcionando")
-})
 
 app.use('/api', require('./market').marketRoutes(db))
 
@@ -41,6 +37,9 @@ app.get('/api/categorias', (req, res) => {
 
 // Rutas para la Inteligencia Artificial (Vara IA)
 app.use("/api", aiRoutes(db))
+
+// En modo demo, el mismo proceso sirve la web compilada y la API bajo un solo origen.
+app.use(express.static(path.join(__dirname, "../frontend/dist")))
 
 async function start() {
   try {

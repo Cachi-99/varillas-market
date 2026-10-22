@@ -27,6 +27,18 @@ El frontend usa `/api` mediante el proxy de Vite. En producción se debe servir 
 - El acceso al panel requiere una cuenta asociada a un comercio. La API protege creación y edición, y determina el comercio desde la sesión; las cuentas se crean localmente con `db:users`. No se exponen datos de compradores mediante una ruta pública de consulta.
 - Vara IA requiere `GEMINI_API_KEY`; busca en el catálogo vigente, ofrece enlaces a fichas reales y mantiene el contexto reciente de la conversación. El modelo se puede configurar con `GEMINI_MODEL` (predeterminado: `gemini-2.5-flash`).
 
+## Demo temporal desde una PC
+
+La demo puede usar MySQL local y compartir la web y la API desde el mismo servidor. La PC debe permanecer encendida, conectada a internet, y con MySQL, la API y el túnel activos. El enlace temporal de Cloudflare cambia cada vez que se inicia el túnel.
+
+1. Configurar `backend/.env` para apuntar al MySQL local. En XAMPP el puerto suele ser `3306`; verificar el puerto real en el panel de XAMPP.
+2. Encender MySQL y compilar la web: `npm run build --prefix frontend`.
+3. En una terminal, iniciar la API: `npm start --prefix backend`. Debe indicar que MySQL se conectó.
+4. Instalar `cloudflared` desde la [guía oficial de instalación](https://developers.cloudflare.com/tunnel/downloads/). En otra terminal, ejecutar `cloudflared tunnel --url http://localhost:3000`.
+5. Compartir la URL `https://…trycloudflare.com` que aparece en esa terminal. Para cerrar el acceso, detener `cloudflared` con Ctrl+C.
+
+El Quick Tunnel es para demos: cualquiera que tenga el enlace puede abrir la aplicación y el enlace deja de funcionar al detener el túnel. No publicar información privada ni compartir credenciales. No abrir el puerto de MySQL al router; solo se expone la API web.
+
 ## Verificación
 
 ```text

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
+import { api } from './api'
 
 export default function Comercios({ comercioSeleccionado, setComercioSeleccionado }) {
   const [comercios, setComercios] = useState([])
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/comercios')
-      .then(res => { if (!res.ok) throw new Error('Error cargando comercios'); return res.json() })
+    api('/comercios')
       .then(data => setComercios(data))
       .catch(err => console.error(err))
   }, [])
