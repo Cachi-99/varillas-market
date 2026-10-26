@@ -23,8 +23,9 @@ El frontend usa `/api` mediante el proxy de Vite. En producción se debe servir 
 - Las fichas tienen enlaces `/#/producto/ID` y consultan el producto en el servidor.
 - El carrito guarda únicamente identificadores y cantidades en el navegador. Actualiza los precios al abrirse.
 - Al confirmar, el backend calcula el total con precios de MySQL en centavos y guarda el pedido y sus líneas en una transacción. Rechaza importes desactualizados y productos inexistentes; una clave única evita duplicar el mismo reintento.
-- Los pedidos quedan en estado `pendiente` en `pedidos` y `pedido_items`, conservando el precio, título y comercio de cada línea. No hay cobro online, reserva de stock, notificación automática al vendedor ni panel de gestión de pedidos. Efectivo/transferencia y retiro/entrega expresan preferencias a coordinar.
+- Los pedidos quedan en estado `pendiente` en `pedidos` y `pedido_items`, conservando el precio, título y comercio de cada línea. Cada panel de comercio muestra sus pedidos con los datos de contacto del comprador y solo las líneas correspondientes a ese comercio. No hay cobro online, reserva de stock ni notificación automática al vendedor. Efectivo/transferencia y retiro/entrega expresan preferencias a coordinar.
 - El acceso al panel requiere una cuenta asociada a un comercio. La API protege creación y edición, y determina el comercio desde la sesión; las cuentas se crean localmente con `db:users`. No se exponen datos de compradores mediante una ruta pública de consulta.
+- El administrador general está disponible en `/admin` (también `/#/admin`): por defecto usa `admin` / `vm2026`. Puede agregar comercios, que reciben un usuario generado y la clave de `DEMO_BUSINESS_PASSWORD` (por defecto `vm2026`), o eliminar comercios y sus productos. Cada vendedor puede borrar sus propios productos desde su panel.
 - Vara IA requiere `GEMINI_API_KEY`; busca en el catálogo vigente, ofrece enlaces a fichas reales y mantiene el contexto reciente de la conversación. El modelo se puede configurar con `GEMINI_MODEL` (predeterminado: `gemini-2.5-flash`).
 
 ## Demo temporal desde una PC

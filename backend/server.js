@@ -14,6 +14,7 @@ app.use(express.json())
 const db = mysql.createPool({ ...config.database, connectionLimit: 5 })
 
 app.use('/api', require('./market').marketRoutes(db))
+app.use('/api', require('./admin').adminRoutes(db))
 
 // RUTA GET PARA OBTENER COMERCIOS
 app.get("/api/comercios", (req, res) => {
@@ -39,6 +40,7 @@ app.get('/api/categorias', (req, res) => {
 app.use("/api", aiRoutes(db))
 
 // En modo demo, el mismo proceso sirve la web compilada y la API bajo un solo origen.
+app.get('/admin', (_req, res) => res.redirect('/#/admin'))
 app.use(express.static(path.join(__dirname, "../frontend/dist")))
 
 async function start() {

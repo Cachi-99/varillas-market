@@ -50,6 +50,34 @@ function marketRoutes(pool) {
     try { const [rows] = await db.query(`${select} WHERE p.comercio_id = ? ORDER BY p.id DESC`, [req.user.comercio_id]); res.json(rows) }
     catch (error) { console.error(error.code); res.status(500).json({ error: 'No se pudieron cargar tus productos.' }) }
   })
+  router.get('/mis-pedidos', authenticate, async (req, res) => {
+    try {
+      const [rows] = await db.query(`SELECT o.id, o.nombre, o.telefono, o.email, o.pago, o.entrega, o.direccion, o.notas, o.estado, o.creado_en,
+        i.titulo, i.precio, i.cantidad FROM pedidos o JOIN pedido_items i ON i.pedido_id = o.id
+        WHERE i.comercio_id = ? ORDER BY o.creado_en DESC, o.id DESC, i.id`, [req.user.comercio_id])
+      const orders = new Map()
+      for (const row of rows) {
+        if (!orders.has(row.id)) orders.set(row.id, {
+          id: row.id, comprador: row.nombre, telefono: row.telefono, email: row.email,
+          pago: row.pago, entrega: row.entrega, direccion: row.direccion, notas: row.notas,
+          estado: row.estado, creado_en: row.creado_en, items: [], total: 0,
+        })
+        const order = orders.get(row.id)
+        const precio = Number(row.precio)
+        order.items.push({ titulo: row.titulo, precio, cantidad: row.cantidad })
+        order.total += precio * row.cantidad
+      }
+      res.json([...orders.values()])
+    } catch (error) { console.error(error.code); res.status(500).json({ error: 'No se pudieron cargar tus pedidos.' }) }
+  })
+  router.post('/categorias', authenticate, async (req, res) => {
+    const nombre = typeof req.body?.nombre === 'string' ? req.body.nombre.trim() : ''
+    if (!nombre || nombre.length > 50) return res.status(400).json({ error: 'La categoría debe tener entre 1 y 50 caracteres.' })
+    try {
+      const [result] = await db.query('INSERT INTO categorias (nombre) VALUES (?) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)', [nombre])
+      res.status(201).json({ id: result.insertId, nombre })
+    } catch (error) { console.error(error.code); res.status(500).json({ error: 'No se pudo agregar la categoría.' }) }
+  })
   router.get('/productos/:id', async (req, res) => {
     if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: 'Producto inválido.' })
     try {
@@ -89,6 +117,14 @@ function marketRoutes(pool) {
       await db.query('INSERT INTO producto_detalles (producto_id, descripcion) VALUES (?, ?) ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion)', [req.params.id, body.descripcion.trim()])
       res.json({ id: Number(req.params.id), mensaje: 'Producto actualizado.' })
     } catch (error) { console.error(error.code); res.status(500).json({ error: 'No se pudo actualizar el producto.' }) }
+  })
+  router.delete('/productos/:id', authenticate, async (req, res) => {
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ error: 'Producto inválido.' })
+    try {
+      const [result] = await db.query('DELETE FROM productos WHERE id = ? AND comercio_id = ?', [req.params.id, req.user.comercio_id])
+      if (!result.affectedRows) return res.status(404).json({ error: 'No encontramos ese producto en tu comercio.' })
+      res.json({ mensaje: 'Producto eliminado.' })
+    } catch (error) { console.error(error.code); res.status(500).json({ error: 'No se pudo eliminar el producto.' }) }
   })
   router.post('/pedidos', async (req, res) => {
     const error = validarPedido(req.body || {})

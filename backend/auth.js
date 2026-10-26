@@ -17,7 +17,7 @@ function verifyPassword(password, stored) {
 }
 
 function createToken(user) {
-  const payload = encode({ id: user.id, comercio_id: user.comercio_id, usuario: user.usuario, exp: Date.now() + 1000 * 60 * 60 * 24 * 7 })
+  const payload = encode({ id: user.id, comercio_id: user.comercio_id, usuario: user.usuario, role: user.role || 'merchant', exp: Date.now() + 1000 * 60 * 60 * 24 * 7 })
   const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url')
   return `${payload}.${signature}`
 }
@@ -32,10 +32,25 @@ function authenticate(req, res, next) {
   if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) return res.status(401).json({ error: 'La sesión no es válida.' })
   try {
     const user = JSON.parse(Buffer.from(payload, 'base64url').toString())
-    if (!Number.isInteger(user.id) || !Number.isInteger(user.comercio_id) || user.exp < Date.now()) throw new Error('expired')
+    if (!Number.isInteger(user.id) || !Number.isInteger(user.comercio_id) || user.exp < Date.now() || user.role === 'admin') throw new Error('expired')
     req.user = user
     next()
   } catch { return res.status(401).json({ error: 'La sesión venció. Iniciá sesión nuevamente.' }) }
 }
 
-module.exports = { hashPassword, verifyPassword, createToken, authenticate }
+function authenticateAdmin(req, res, next) {
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+  const [payload, signature] = token.split('.')
+  if (!payload || !signature) return res.status(401).json({ error: 'Iniciá sesión como administrador.' })
+  const expected = crypto.createHmac('sha256', secret).update(payload).digest()
+  const received = Buffer.from(signature, 'base64url')
+  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) return res.status(401).json({ error: 'La sesión de administrador no es válida.' })
+  try {
+    const user = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (user.role !== 'admin' || user.exp < Date.now()) throw new Error('invalid admin')
+    req.user = user
+    next()
+  } catch { return res.status(401).json({ error: 'La sesión de administrador venció. Iniciá sesión nuevamente.' }) }
+}
+
+module.exports = { hashPassword, verifyPassword, createToken, authenticate, authenticateAdmin }

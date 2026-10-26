@@ -9,6 +9,7 @@
     "dev": "node --watch server.js",
     "db:init": "node scripts/init-db.js",
     "db:users": "node scripts/seed-business-users.js",
+    "db:usernames": "node scripts/reset-business-usernames.js",
     "db:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-db.ps1"
   },
   "keywords": [],
